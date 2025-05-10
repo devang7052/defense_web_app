@@ -109,27 +109,8 @@ async function storeConflictData(data: ConflictData): Promise<void> {
 function createDefaultData(): ConflictData {
   const timestamp = Date.now();
   return {
-    stateStatuses: INDIAN_STATES.map(state => {
-      // Make border states moderate by default for demo purposes
-      const isBorderState = ['Jammu and Kashmir', 'Punjab', 'Rajasthan', 'Gujarat'].includes(state);
-      
-      return {
-        name: state,
-        dangerLevel: isBorderState ? 'moderate' : 'neutral',
-        description: isBorderState 
-          ? 'Border state with potential security concerns' 
-          : 'No current reports of conflict',
-        lastUpdated: timestamp
-      };
-    }),
-    attacks: [
-      {
-        city: 'Srinagar',
-        state: 'Jammu and Kashmir',
-        description: 'Heightened security measures in place',
-        timestamp
-      }
-    ],
+    stateStatuses: [],  
+    attacks:  [],
     articles: [],
     lastUpdated: timestamp
   };
@@ -145,10 +126,10 @@ export async function getConflictData(): Promise<ConflictData> {
     
     // If no state statuses exist yet, create and store default data
     if (stateStatusesSnapshot.empty) {
-      console.log('No existing data found, creating default data');
-      const defaultData = createDefaultData();
-      await storeConflictData(defaultData);
-      return defaultData;
+      console.log('No existing data found');
+      // const defaultData = createDefaultData();
+      // await storeConflictData(defaultData);
+      // return defaultData;
     }
     
     // Get state statuses

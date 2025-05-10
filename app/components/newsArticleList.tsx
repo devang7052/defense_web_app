@@ -1,3 +1,4 @@
+
 import { NewsArticle } from "../lib/conflictData";
 
 interface NewsArticlesListProps {

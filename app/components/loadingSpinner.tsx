@@ -1,3 +1,4 @@
+
 export default function LoadingSpinner({ size = 'medium' }: { size?: 'small' | 'medium' | 'large' }) {
     const sizeClass = {
       small: 'w-4 h-4 border-2',

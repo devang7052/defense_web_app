@@ -1,4 +1,5 @@
-import { testAI, testFirebase, testNewsApi } from '@/app/lib/ai';
+import { testAI, } from '@/app/lib/ai';
+import { testFirebase, testNewsApi } from '@/app/lib/service-test';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
