@@ -15,6 +15,7 @@ export interface AttackInfo {
   state: string;
   description: string;
   timestamp: number;
+  sourceArticleUrl?: string; // URL to the source article reporting this incident
 }
 
 export interface NewsArticle {
@@ -22,6 +23,7 @@ export interface NewsArticle {
   source: string;
   url: string;
   publishedAt: string;
+  summary?: string;
 }
 
 interface ConflictData {
@@ -56,12 +58,13 @@ async function fetchNews(): Promise<NewsArticle[]> {
     
     const data = await response.json();
     
-    // Map to our NewsArticle format
+    // Map to our NewsArticle format with summary
     return (data.articles || []).slice(0, 20).map((article: any) => ({
       title: article.title || 'No title',
-      source: article.source?.name || 'Unknown source',
+      source: article.source || 'Unknown source',
       url: article.url || '#',
-      publishedAt: article.publishedAt || new Date().toISOString()
+      publishedAt: article.publishedAt || new Date().toISOString(),
+      summary: article.summary || ''
     }));
   } catch (error) {
     console.error('Error fetching news:', error);

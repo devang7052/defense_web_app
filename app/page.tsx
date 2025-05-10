@@ -54,9 +54,19 @@ export default function Home() {
   useEffect(() => {
     loadData();
     
-    // Set up interval to refresh data every 30 minutes
-    const intervalId = setInterval(() => {
-      refreshData();
+    // Set up interval to update data in Firebase every 30 minutes
+    const intervalId = setInterval(async () => {
+      try {
+        setUpdating(true);
+        const data = await updateConflictData();
+        setConflictData(data);
+        setError(null);
+      } catch (err) {
+        setError('Failed to update conflict data. Please try again later.');
+        console.error('Error updating conflict data:', err);
+      } finally {
+        setUpdating(false);
+      }
     }, 30 * 60 * 1000); // 30 minutes in milliseconds
     
     // Clean up interval on unmount
@@ -103,20 +113,20 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-6 bg-slate-50">
+    <main className="min-h-screen p-4 md:p-6 bg-slate-100">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-2">
-            India-Pakistan Conflict Monitoring
+        <header className="mb-6 bg-white rounded-lg shadow-sm p-4 md:p-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
+            India-Pakistan Conflict Monitor
           </h1>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-            <p className="text-slate-600">
+            <p className="text-slate-600 text-sm">
               Last updated: {conflictData ? formatLastUpdated(conflictData.lastUpdated) : 'Unknown'}
             </p>
             <button
               onClick={refreshData}
               disabled={updating}
-              className="mt-2 sm:mt-0 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:bg-blue-400 flex items-center"
+              className="mt-2 sm:mt-0 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition disabled:bg-blue-400 flex items-center"
             >
               {updating ? (
                 <>
@@ -124,28 +134,35 @@ export default function Home() {
                   <LoadingSpinner size="small" />
                 </>
               ) : (
-                'Refresh Data'
+                <>
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh Data
+                </>
               )}
             </button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Map section - takes up full width on small screens, 2/3 on large */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">State Danger Levels</h2>
-            <div className="mb-4 flex flex-wrap gap-4">
-              <div className="flex items-center">
-                <span className="w-4 h-4 bg-red-500 rounded-full mr-2"></span>
-                <span>High Danger</span>
-              </div>
-              <div className="flex items-center">
-                <span className="w-4 h-4 bg-orange-400 rounded-full mr-2"></span>
-                <span>Moderate</span>
-              </div>
-              <div className="flex items-center">
-                <span className="w-4 h-4 bg-green-500 rounded-full mr-2"></span>
-                <span>Neutral</span>
+          <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow-sm">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">State Security Status</h2>
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-red-500 rounded-full mr-1"></span>
+                  <span className="text-xs text-gray-700">High Danger</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-orange-400 rounded-full mr-1"></span>
+                  <span className="text-xs text-gray-700">Moderate</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>
+                  <span className="text-xs text-gray-700">Neutral</span>
+                </div>
               </div>
             </div>
             {conflictData && (
@@ -154,30 +171,50 @@ export default function Home() {
           </div>
 
           {/* Right side column for attacks and news */}
-          <div className="space-y-8">
+          <div className="space-y-4 md:space-y-6">
             {/* Attacks section */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold mb-4">Current Attacks</h2>
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xl font-semibold text-gray-900">Current Incidents</h2>
+                <div className="bg-red-100 text-xs text-red-800 px-2 py-1 rounded-full">
+                  {conflictData?.attacks.length || 0} reported
+                </div>
+              </div>
               {conflictData && conflictData.attacks.length > 0 ? (
                 <AttacksTable attacks={conflictData.attacks} />
               ) : (
-                <p className="text-slate-600">No current attacks reported</p>
+                <p className="text-slate-600 text-sm italic text-center py-4">No incidents reported</p>
               )}
             </div>
 
             {/* News section */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-2xl font-semibold mb-4">Recent Articles</h2>
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xl font-semibold text-gray-900">Latest News</h2>
+                <a 
+                  href="#" 
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    refreshData();
+                  }}
+                >
+                  See all
+                  <svg className="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
+                  </svg>
+                </a>
+              </div>
               {conflictData && conflictData.articles.length > 0 ? (
                 <NewsArticlesList articles={conflictData.articles} />
               ) : (
-                <p className="text-slate-600">No relevant articles found</p>
+                <p className="text-slate-600 text-sm italic text-center py-4">No relevant articles found</p>
               )}
             </div>
           </div>
         </div>
 
-        <footer className="mt-12 text-center text-slate-500 text-sm">
+        <footer className="mt-6 md:mt-8 bg-white rounded-lg shadow-sm p-4 text-center text-slate-500 text-xs">
           <p>Data is refreshed automatically every 30 minutes. Sources include Times of India, Hindustan Times, and other trusted Indian news outlets.</p>
           <p className="mt-1">This is for informational purposes only. In case of emergency, follow official government advisories.</p>
         </footer>

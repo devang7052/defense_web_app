@@ -68,17 +68,40 @@ export async function analyzeNewsWithAI(articles: NewsArticle[]): Promise<AiAnal
     throw new Error("AI service unavailable. Please check your API key and try again later.");
   }
   
-  // Prepare articles data for analysis
-  const articlesText = articles.map(article => {
-    return `Title: ${article.title || ''}\nSource: ${article.source || ''}\nPublished: ${article.publishedAt || ''}\n\n`;
+  // Prepare articles data for analysis with index for reference
+  const indexedArticles = articles.map((article, index) => {
+    return `[Article ${index + 1}]\nTitle: ${article.title || ''}\nSource: ${article.source || ''}\nPublished: ${article.publishedAt || ''}\nSummary: ${article.summary || ''}\nURL: ${article.url || ''}\n\n`;
   }).join('').substring(0, 20000); // Limit text length to avoid token limits
   
   // Create AI prompt
   const prompt = `
-Based on these news articles about the India-Pakistan conflict, provide:
+You are a security analyst specializing in the India-Pakistan conflict. Analyze these news articles and provide:
 
-1. A list of Indian states with their danger levels (danger/moderate/neutral)
-2. A list of current attacks or incidents
+1. A detailed security assessment for EACH Indian state with their danger levels:
+   - "danger": Active conflict, direct attacks, missile threats, or high tension with Pakistan
+   - "moderate": Increased security measures, border tensions, military deployment, or indirect threats
+   - "neutral": Normal conditions with no significant conflict activity or threats
+   - description should have the details of the city where it is happening in the state and should be in detail
+
+2. List ONLY major incidents directly related to the India-Pakistan conflict (maximum 10 incidents):
+   - Focus ONLY on significant events such as:
+     * Cross-border attacks
+     * Military confrontations
+     * Terrorist incidents linked to Pakistan
+     * Missile/artillery exchanges
+     * Major security breaches at the border
+   - DO NOT include minor incidents, political statements, or non-violent events
+   - Each incident must include:
+     * Exact city name
+     * State name 
+     * Detailed description (casualties, damage, military response)
+     * Source article number that reported this incident (e.g., "Article 3")
+
+Guidelines for categorization:
+- If a state has missile threats, attacks, or active conflict with Pakistan → danger
+- If a state has increased security, military deployment, or mentions of Pakistan threats → moderate
+- If a state has no security concerns or Pakistan-related issues → neutra
+- Border states (Jammu and Kashmir, Punjab, Rajasthan, Gujarat) should have higher scrutiny
 
 Format your response as valid JSON with this structure:
 {
@@ -86,20 +109,21 @@ Format your response as valid JSON with this structure:
     {
       "name": "State Name",
       "dangerLevel": "danger|moderate|neutral",
-      "description": "Brief explanation"
+      "description": "Detailed security assessment with specific details"
     }
   ],
   "attacks": [
     {
       "city": "City Name",
       "state": "State Name",
-      "description": "Description"
+      "description": "Detailed description of the attack or incident",
+      "sourceArticle": 3
     }
   ]
 }
 
 Here are the articles:
-${articlesText}
+${indexedArticles}
 `;
 
   try {
@@ -148,11 +172,22 @@ ${articlesText}
       };
     });
     
-    // Format attacks
-    const attacks: AttackInfo[] = (aiAnalysis.attacks || []).map((attack: any) => ({
-      ...attack,
-      timestamp
-    }));
+    // Format attacks with source article URLs
+    const attacks: AttackInfo[] = (aiAnalysis.attacks || []).map((attack: any) => {
+      // Get the source article URL if available
+      let sourceArticleUrl = '';
+      if (attack.sourceArticle && articles[attack.sourceArticle - 1]) {
+        sourceArticleUrl = articles[attack.sourceArticle - 1].url || '';
+      }
+      
+      return {
+        city: attack.city,
+        state: attack.state,
+        description: attack.description,
+        timestamp,
+        sourceArticleUrl
+      };
+    });
     
     return {
       stateStatuses,
