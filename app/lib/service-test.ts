@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import { collection, getDocs, limit, query } from 'firebase/firestore';
-import { genAI } from './ai';
+import { genAIInstance as genAI } from './ai';
 import { fetchTopHeadlines } from './newsapi';
 
 export async function testFirebase() {

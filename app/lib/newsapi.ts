@@ -20,3 +20,22 @@ export async function fetchTopHeadlines({ country = 'us', language = 'en', categ
     throw error;
   }
 }
+
+export async function fetchEverything({ query = 'news', language = 'en' } = {}) {
+  try {
+    const response = await axios.get('https://newsapi.org/v2/everything', {
+      params: {
+        apiKey: newsApiKey,
+        q: query,
+        language,
+        pageSize: 10,
+        sortBy: 'publishedAt'
+      },
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching everything:', error);
+    throw error;
+  }
+}
